@@ -1,0 +1,168 @@
+/* header.css */
+.header {
+  height: 125px;
+  background-color: #0a5c0a;
+  color: #fff;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.baslik {
+  font-size: 60px;
+  transform: translate(20.5%,-65%);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  width: 60%;
+}
+
+.basliklar {
+  justify-content: center;
+}
+
+.smallbaslik1 {
+  width: 4.40em;
+  transform: translate(290%,-202%);
+  font-size: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.smallbaslik1 img {
+  transform: translateY(8px);
+}
+
+.smallbaslik2 {
+  transform: translate(305%,-380%);
+  font-size: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  width: 5.65em;
+}
+
+.smallbaslik2 img {
+  transform: translate(3px,2px);
+}
+
+.smallbaslik3 {
+  width: 6.6em;
+  transform: translate(345%,-532%);
+  font-size: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.smallbaslik3 img {
+  transform: translate(3px,4px);
+}
+
+
+.logo {
+  position: absolute;
+  height: 200px;
+  left: 0;
+  padding: 10px;
+  transform: translateY(-23%);
+  margin-left: 15px;
+}
+
+.menu {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 25px;
+}
+
+.menuItem {
+  padding: 1px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 109px;
+  margin-left: 20px;
+  text-align: center;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translate(-30%,-750%);
+  font-size: 25px;
+}
+
+.menuItem:hover {
+  background-color: #fff;
+  color: #0a5c0a;
+}
+
+/* header.css */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Arkaplanı yarı saydam siyah yapar */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999; /* Modal'ı diğer içeriklerin üzerine getirir */
+}
+
+
+.modal {
+  background-color: #0a5c0a;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  max-width: 400px;
+  width: 100%;
+  position: relative; /* Modal'a göre .close'yu konumlandırmak için */
+  color: #fff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.close {
+  position: absolute;
+  top: 5px; /* Modal içinde üst kenara 5 piksel mesafe */
+  right: 5px; /* Modal içinde sağ kenara 5 piksel mesafe */
+  cursor: pointer;
+  font-size: 20px;
+  color: #fff;
+}
+
+.close:hover {
+  color: #000;
+}
+
+.kayitinput1,.kayitinput2,.kayitinput3{
+  border-radius: 3px;
+  width: 40%;
+}
+
+.kayitinput3:hover {
+  border-radius: 3px;
+  width: 40%;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.girisinput1,.girisinput2,.girisinput3{
+  border-radius: 3px;
+  width: 40%;
+}
+
+a {
+  text-decoration: none;
+  color: #fff;
+}
+
+a:hover {
+  color: #0a5c0a;
+}
+
+@media only screen and (max-width: 800px) {
+  /* For mobile phones: */
+  :not[logo]*/{
+    width: 100%;
+  }
+}
+
+
+
+
+
