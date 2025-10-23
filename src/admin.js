@@ -3,12 +3,15 @@ import React, { useState, useEffect } from 'react';
 import './admin.css';
 import Header from './header';
 import { getDatabase, ref, push, get, remove, update } from 'firebase/database';
+import { useToast } from './useToast';
+import Toast from './Toast';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [biletler, setBiletler] = useState([]);
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -32,10 +35,10 @@ const Admin = () => {
     if (adminPassword === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
       localStorage.setItem('biletcepte_admin', 'true');
-      alert('✅ Admin girişi başarılı!');
+      toast.success('Admin girişi başarılı!');
       fetchBiletler();
     } else {
-      alert('❌ Hatalı şifre!');
+      toast.error('Hatalı şifre!');
     }
   };
 
@@ -70,7 +73,7 @@ const Admin = () => {
       }
     } catch (error) {
       console.error('❌ Bilet yükleme hatası:', error);
-      alert('⚠️ Biletler yüklenirken hata oluştu: ' + error.message);
+      toast.error('Biletler yüklenirken hata oluştu: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -91,12 +94,12 @@ const Admin = () => {
     
     // Validasyon
     if (!formData.nereden || !formData.nereye || !formData.tarih) {
-      alert('⚠️ Lütfen zorunlu alanları doldurun (Nereden, Nereye, Tarih)');
+      toast.warning('Lütfen zorunlu alanları doldurun (Nereden, Nereye, Tarih)');
       return;
     }
 
     if (formData.nereden === formData.nereye) {
-      alert('⚠️ Başlangıç ve varış şehri aynı olamaz!');
+      toast.warning('Başlangıç ve varış şehri aynı olamaz!');
       return;
     }
 
@@ -107,7 +110,7 @@ const Admin = () => {
       
       await push(biletlerRef, formData);
       
-      alert('✅ Bilet başarıyla eklendi!');
+      toast.success('Bilet başarıyla eklendi!');
       
       // Formu temizle
       setFormData({
@@ -125,7 +128,7 @@ const Admin = () => {
       
     } catch (error) {
       console.error('❌ Bilet ekleme hatası:', error);
-      alert('⚠️ Bilet eklenirken hata oluştu: ' + error.message);
+      toast.error('Bilet eklenirken hata oluştu: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -161,7 +164,7 @@ const Admin = () => {
       
       await update(biletRef, formData);
       
-      alert('✅ Bilet başarıyla güncellendi!');
+      toast.success('Bilet başarıyla güncellendi!');
       
       // Düzenleme modundan çık
       setEditingBilet(null);
@@ -182,7 +185,7 @@ const Admin = () => {
       
     } catch (error) {
       console.error('❌ Bilet güncelleme hatası:', error);
-      alert('⚠️ Bilet güncellenirken hata oluştu: ' + error.message);
+      toast.error('Bilet güncellenirken hata oluştu: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -204,9 +207,10 @@ const Admin = () => {
 
   // Bilet sil
   const handleDeleteBilet = async (biletId) => {
-    const onay = window.confirm('🗑️ Bu bileti silmek istediğinize emin misiniz?');
+    toast.warning('Bilet siliniyor...', 2000);
     
-    if (!onay) return;
+    // Kısa bir gecikme sonra sil
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     setLoading(true);
     try {
@@ -215,14 +219,14 @@ const Admin = () => {
       
       await remove(biletRef);
       
-      alert('✅ Bilet başarıyla silindi!');
+      toast.success('Bilet başarıyla silindi!');
       
       // Biletleri yeniden yükle
       await fetchBiletler();
       
     } catch (error) {
       console.error('❌ Bilet silme hatası:', error);
-      alert('⚠️ Bilet silinirken hata oluştu: ' + error.message);
+      toast.error('Bilet silinirken hata oluştu: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -230,13 +234,14 @@ const Admin = () => {
 
   // Çıkış yap
   const handleLogout = () => {
-    const onay = window.confirm('🚪 Admin panelinden çıkmak istediğinize emin misiniz?');
-    if (onay) {
+    toast.warning('Admin panelinden çıkış yapılıyor...', 2000);
+    
+    setTimeout(() => {
       setIsAuthenticated(false);
       localStorage.removeItem('biletcepte_admin');
       setAdminPassword('');
-      alert('👋 Başarıyla çıkış yaptınız!');
-    }
+      toast.success('Başarıyla çıkış yaptınız!');
+    }, 500);
   };
 
   // Şehir adı getir
@@ -525,6 +530,19 @@ const Admin = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Toast Container */}
+      <div className="toast-container">
+        {toast.toasts.map((t) => (
+          <Toast
+            key={t.id}
+            message={t.message}
+            type={t.type}
+            duration={t.duration}
+            onClose={() => toast.removeToast(t.id)}
+          />
+        ))}
       </div>
     </>
   );

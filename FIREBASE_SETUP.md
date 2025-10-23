@@ -1,12 +1,12 @@
-# 🔥 Firebase Realtime Database Kurulumu
+# 🔥 Firebase Realtime Database Kurulum Rehberi
 
-## 🐛 Sorun: Permission Denied Hatası
+## � Genel Bakış
 
-Giriş ve kayıt işlemleri sırasında **"Permission denied"** hatası alınıyor. Bu hata, Firebase Realtime Database'in varsayılan olarak tüm okuma/yazma işlemlerini engellediği için oluşuyor.
+Bu rehber, BiletCepte projesi için Firebase Realtime Database'in nasıl yapılandırılacağını açıklar.
 
 ---
 
-## ✅ Çözüm: Database Kurallarını Güncelle
+## ⚙️ Kurulum Adımları
 
 ### Adım 1: Firebase Console'a Git
 1. [Firebase Console](https://console.firebase.google.com/) adresine git

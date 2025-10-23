@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import './header.css';
 import { getDatabase, ref, push, child, get } from 'firebase/database';
 import { Link } from 'react-router-dom';
+import { useToast } from './useToast';
+import Toast from './Toast';
 
 const Header = () => {
   const [currentBaslik, setCurrentBaslik] = useState("Artık");
@@ -10,6 +12,7 @@ const Header = () => {
   const [isModalOpenGiris, setIsModalOpenGiris] = useState(false);
   const [isModalOpenKayit, setIsModalOpenKayit] = useState(false);
   const [kullanici, setKullanici] = useState(null); // Giriş yapmış kullanıcı
+  const toast = useToast();
   
   // Sayfa yüklendiğinde localStorage'dan kullanıcıyı kontrol et
   useEffect(() => {
@@ -41,27 +44,27 @@ const Header = () => {
     
     // Boş alan kontrolü
     if (!email || !password) {
-      alert("⚠️ Lütfen tüm alanları doldurun!");
+      toast.warning("Lütfen tüm alanları doldurun!");
       return;
     }
     
     // E-posta formatı kontrolü
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      alert("⚠️ Geçerli bir e-posta adresi girin!");
+      toast.warning("Geçerli bir e-posta adresi girin!");
       return;
     }
     
     // Şifre uzunluğu kontrolü
     if (password.length < 6) {
-      alert("⚠️ Şifre en az 6 karakter olmalıdır!");
+      toast.warning("Şifre en az 6 karakter olmalıdır!");
       return;
     }
     
     push(ref(vt,'kullanicilar/'), { email, password })
     .then(() => {
       console.log("✅ Kayıt başarılı!");
-      alert(`🎉 Kayıt Başarılı!\n\nHesabınız oluşturuldu.\nŞimdi giriş yapabilirsiniz.`);
+      toast.success("Kayıt başarılı! Şimdi giriş yapabilirsiniz.");
       setIsModalOpenKayit(false);
     })
     .catch((error) => {
@@ -69,9 +72,9 @@ const Header = () => {
       
       // Firebase izin hatası kontrolü
       if (error.code === 'PERMISSION_DENIED') {
-        alert("🔒 Veritabanı Erişim Hatası\n\nFirebase Realtime Database kuralları ayarlanmalı.\n\nGeçici çözüm: Firebase Console'dan şu kuralı ekleyin:\n\n{\n  \"rules\": {\n    \".read\": true,\n    \".write\": true\n  }\n}");
+        toast.error("Veritabanı erişim hatası! Firebase kuralları ayarlanmalı.");
       } else {
-        alert("❌ Bir hata oluştu!\n\nLütfen tekrar deneyin.");
+        toast.error("Bir hata oluştu! Lütfen tekrar deneyin.");
       }
     });
     }
@@ -82,7 +85,7 @@ const Header = () => {
      
      // Boş alan kontrolü
      if (!mail || !sifre) {
-       alert("⚠️ Lütfen e-posta ve şifre alanlarını doldurun!");
+       toast.warning("Lütfen e-posta ve şifre alanlarını doldurun!");
        return;
      }
 
@@ -111,26 +114,26 @@ const Header = () => {
             localStorage.setItem('biletcepte_kullanici', JSON.stringify(kullaniciBilgi));
             
             console.log("✅ Giriş Başarılı");
-            alert(`🎉 Hoş geldiniz!\n\n${email}\n\nGiriş başarılı oldu.`);
+            toast.success(`Hoş geldiniz ${email}!`);
             setIsModalOpenGiris(false);
             return;
           }
         });
         
         if (!girisBasarili) {
-          alert("❌ Hatalı giriş!\n\nE-posta veya şifre yanlış.");
+          toast.error("E-posta veya şifre yanlış!");
         }
       } else {
-        alert("⚠️ Sistemde kayıtlı kullanıcı bulunamadı.\n\nLütfen önce kayıt olun.");
+        toast.warning("Sistemde kayıtlı kullanıcı bulunamadı. Lütfen önce kayıt olun.");
       }
     }).catch((error) => {
       console.error("Giriş hatası:", error);
       
       // Firebase izin hatası kontrolü
       if (error.code === 'PERMISSION_DENIED') {
-        alert("🔒 Veritabanı Erişim Hatası\n\nFirebase Realtime Database kuralları ayarlanmalı.\n\nGeçici çözüm: Firebase Console'dan şu kuralı ekleyin:\n\n{\n  \"rules\": {\n    \".read\": true,\n    \".write\": true\n  }\n}");
+        toast.error("Veritabanı erişim hatası! Firebase kuralları ayarlanmalı.");
       } else {
-        alert("❌ Bir hata oluştu!\n\nLütfen internet bağlantınızı kontrol edin.");
+        toast.error("Bir hata oluştu! Lütfen internet bağlantınızı kontrol edin.");
       }
     });
 }
@@ -149,15 +152,27 @@ const Header = () => {
   };
 
   const handleCikisClick = () => {
-    // Kullanıcıdan onay al
-    const onay = window.confirm("🚪 Çıkış yapmak istediğinize emin misiniz?");
-    if (onay) {
+    // Toast ile bilgilendirme
+    toast.warning("Çıkış yapılıyor...", 2000);
+    
+    // Kısa bir gecikme sonra çıkış yap
+    setTimeout(() => {
       // State'i temizle
       setKullanici(null);
       // localStorage'ı temizle
       localStorage.removeItem('biletcepte_kullanici');
-      alert("👋 Başarıyla çıkış yaptınız!\n\nTekrar görüşmek üzere.");
-    }
+      toast.success("Başarıyla çıkış yaptınız! Tekrar görüşmek üzere.");
+      
+      // Eğer biletlerim sayfasındaysa ana sayfaya yönlendir
+      setTimeout(() => {
+        if (window.location.pathname === '/biletler') {
+          window.location.href = '/';
+        } else {
+          // Diğer sayfalarda sadece sayfayı yenile
+          window.location.reload();
+        }
+      }, 1000); // Toast'ın görünmesi için 1 saniye bekle
+    }, 500);
   };
 
 
@@ -257,8 +272,22 @@ const Header = () => {
             <span className="close" onClick={handleCloseModal}>&times;</span>
             <h2>Kayıt Ol</h2>
             <div className="modal-form">
-              <input className='modal-input' type="email" id="mail" placeholder="E-Mail" required />
-              <input className='modal-input' type="password" id="sifre" placeholder="Şifre" required />
+              <input 
+                className='modal-input' 
+                type="email" 
+                id="mail" 
+                placeholder="E-Mail" 
+                required 
+                onKeyPress={(e) => e.key === 'Enter' && Kayit()}
+              />
+              <input 
+                className='modal-input' 
+                type="password" 
+                id="sifre" 
+                placeholder="Şifre" 
+                required 
+                onKeyPress={(e) => e.key === 'Enter' && Kayit()}
+              />
               <button className='modal-submit' onClick={Kayit}>Kayıt Ol</button>
             </div>
           </div>
@@ -271,13 +300,40 @@ const Header = () => {
             <span className="close" onClick={handleCloseModal}>&times;</span>
             <h2>Giriş Yap</h2>
             <div className="modal-form">
-              <input className='modal-input' type="email" id="mailg" placeholder="E-Mail" required />
-              <input className='modal-input' type="password" id="sifreg" placeholder="Şifre" required />
+              <input 
+                className='modal-input' 
+                type="email" 
+                id="mailg" 
+                placeholder="E-Mail" 
+                required 
+                onKeyPress={(e) => e.key === 'Enter' && Giris()}
+              />
+              <input 
+                className='modal-input' 
+                type="password" 
+                id="sifreg" 
+                placeholder="Şifre" 
+                required 
+                onKeyPress={(e) => e.key === 'Enter' && Giris()}
+              />
               <button className='modal-submit' onClick={Giris}>Giriş Yap</button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Toast Container */}
+      <div className="toast-container">
+        {toast.toasts.map((t) => (
+          <Toast
+            key={t.id}
+            message={t.message}
+            type={t.type}
+            duration={t.duration}
+            onClose={() => toast.removeToast(t.id)}
+          />
+        ))}
+      </div>
     </>
   );
 }

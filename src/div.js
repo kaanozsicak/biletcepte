@@ -2,6 +2,9 @@
 import React, { useState } from 'react';
 import './div.css'; // Stil dosyasını içe aktarın
 import { getDatabase, ref, get, push, set } from 'firebase/database';
+import PaymentModal from './PaymentModal';
+import { useToast } from './useToast';
+import Toast from './Toast';
 
 const DivComponent = () => {
   const [basValue, setBasValue] = useState('bal'); // Başlangıç değeri "bal" olarak ayarlandı
@@ -10,6 +13,9 @@ const DivComponent = () => {
   const [biletler, setBiletler] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [selectedBilet, setSelectedBilet] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const toast = useToast();
 
   // Şehir kodunu tam adına çevir
   const getSehirAdi = (kod) => {
@@ -33,36 +39,35 @@ const DivComponent = () => {
     });
   };
 
-  // Bilet satın alma
-  const handleSatinAl = async (bilet) => {
+  // Bilet satın alma - Ödeme modalını aç
+  const handleSatinAl = (bilet) => {
     // Kullanıcı giriş kontrolü
     const kullaniciStr = localStorage.getItem('biletcepte_kullanici');
     
     if (!kullaniciStr) {
-      alert('⚠️ Bilet satın almak için lütfen giriş yapın!');
+      toast.warning('Bilet satın almak için lütfen giriş yapın!');
       return;
     }
 
+    // Ödeme modalını aç
+    setSelectedBilet(bilet);
+    setShowPaymentModal(true);
+  };
+
+  // Ödeme başarılı - Firebase'e kaydet
+  const handlePaymentSuccess = async (biletWithPayment) => {
     try {
+      const kullaniciStr = localStorage.getItem('biletcepte_kullanici');
       const kullanici = JSON.parse(kullaniciStr);
       const db = getDatabase();
       
-      // Onay penceresi
-      const onay = window.confirm(
-        `🎫 Bilet Satın Alma Onayı\n\n` +
-        `📍 ${getSehirAdi(bilet.nereden)} → ${getSehirAdi(bilet.nereye)}\n` +
-        `📅 ${formatTarih(bilet.tarih)}\n` +
-        `${bilet.firma ? `🚌 ${bilet.firma}\n` : ''}` +
-        `${bilet.saat ? `⏰ ${bilet.saat}\n` : ''}` +
-        `${bilet.fiyat ? `💰 ${bilet.fiyat} TL\n` : ''}\n\n` +
-        `Bu bileti satın almak istiyor musunuz?`
-      );
-
-      if (!onay) return;
-
       // Kullanıcının biletlerini kaydet
+      // UYARI: biletWithPayment içindeki 'id' field'ını SİLMELİYİZ!
+      // Çünkü Firebase otomatik ID oluşturacak
+      const { id, ...biletDataWithoutId } = biletWithPayment;
+      
       const satinAlinanBilet = {
-        ...bilet,
+        ...biletDataWithoutId,  // id olmadan bilet datası
         satinAlmaTarihi: new Date().toISOString(),
         kullaniciEmail: kullanici.email,
         durum: 'aktif' // aktif, iptal edildi
@@ -73,11 +78,15 @@ const DivComponent = () => {
       
       await set(yeniBiletRef, satinAlinanBilet);
 
-      alert('✅ Bilet başarıyla satın alındı!\n\n📱 "Biletlerim" sayfasından biletinizi görüntüleyebilirsiniz.');
+      // Modal'ı kapat
+      setShowPaymentModal(false);
+      setSelectedBilet(null);
+      
+      toast.success('Bilet başarıyla satın alındı! Biletlerim sayfasından görüntüleyebilirsiniz.');
       
     } catch (error) {
-      console.error('❌ Bilet satın alma hatası:', error);
-      alert('❌ Bilet satın alınırken bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('❌ Bilet kaydetme hatası:', error);
+      toast.error('Bilet kaydedilirken bir hata oluştu. Lütfen müşteri hizmetleri ile iletişime geçin.');
     }
   };
 
@@ -86,12 +95,12 @@ const DivComponent = () => {
     
     // Validasyon
     if (!basValue || !bitValue || !tarih) {
-      alert('⚠️ Lütfen tüm alanları doldurun!');
+      toast.warning('Lütfen tüm alanları doldurun!');
       return;
     }
     
     if (basValue === bitValue) {
-      alert('⚠️ Başlangıç ve varış noktası aynı olamaz!');
+      toast.warning('Başlangıç ve varış noktası aynı olamaz!');
       return;
     }
     
@@ -151,15 +160,15 @@ const DivComponent = () => {
         console.log(`✅ ${filtrelenmisBiletler.length} bilet bulundu`, filtrelenmisBiletler);
         
         if (filtrelenmisBiletler.length === 0) {
-          alert('😕 Üzgünüz, aradığınız kriterlere uygun bilet bulunamadı.');
+          toast.info('Üzgünüz, aradığınız kriterlere uygun bilet bulunamadı.');
         } else {
-          alert(`✅ ${filtrelenmisBiletler.length} adet bilet bulundu!`);
+          toast.success(`${filtrelenmisBiletler.length} adet bilet bulundu!`);
         }
       } else {
         console.log('❌ Veritabanında hiç bilet yok (snapshot.exists() = false)');
         console.log('⚠️ Firebase kurallarını kontrol edin!');
         setBiletler([]);
-        alert('😕 Veritabanında hiç bilet bulunmuyor veya Firebase kuralları okuma izni vermiyor. Console\'u kontrol edin.');
+        toast.warning('Veritabanında hiç bilet bulunmuyor. Lütfen daha sonra tekrar deneyin.');
       }
     } catch (error) {
       console.error('❌ Bilet arama hatası:', error);
@@ -171,9 +180,9 @@ const DivComponent = () => {
       if (error.code === 'PERMISSION_DENIED') {
         console.error('🚫 Firebase PERMISSION_DENIED hatası!');
         console.error('📝 Çözüm: Firebase Console > Realtime Database > Rules sekmesinden okuma izni verin');
-        alert('🚫 Firebase izin hatası: Veritabanı kuralları okuma izni vermiyor.\n\nFIREBASE_SETUP.md dosyasını kontrol edin!');
+        toast.error('Firebase izin hatası: Veritabanı kuralları okuma izni vermiyor.');
       } else {
-        alert('⚠️ Bilet arama sırasında bir hata oluştu: ' + error.message);
+        toast.error('Bilet arama sırasında bir hata oluştu: ' + error.message);
       }
     } finally {
       setLoading(false);
@@ -181,11 +190,41 @@ const DivComponent = () => {
   };
 
   return (
-    <div>
+    <div className="homepage-container">
+      {/* Hero Section */}
+      <div className="hero-section">
+        <div className="hero-content">
+          <div className="hero-text">
+            <h1 className="hero-title">
+              🚌 Türkiye'nin En Hızlı<br/>
+              <span className="gradient-text">Bilet Arama Platformu</span>
+            </h1>
+            <p className="hero-subtitle">
+              Binlerce otobüs firması arasından en uygun fiyatlı biletleri anında bulun!
+            </p>
+            <div className="hero-stats">
+              <div className="stat-item">
+                <span className="stat-number">500K+</span>
+                <span className="stat-label">Mutlu Yolcu</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">50+</span>
+                <span className="stat-label">Otobüs Firması</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">200+</span>
+                <span className="stat-label">Güzergah</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bilet Arama Kutusu - Modern Design */}
       <div className='biletarabox'>
         <div className="biletarabox-header">
-          <h2>🚌 Otobüs Bileti Ara</h2>
-          <p>Türkiye'nin her yerine uygun fiyatlı biletler</p>
+          <h2>🎫 Biletini Hemen Bul</h2>
+          <p>Nereye gitmek istiyorsun? Hadi başlayalım! ✨</p>
         </div>
         <form className='biletara' onSubmit={handleSubmit}>
           <div className="form-group">
@@ -283,15 +322,88 @@ const DivComponent = () => {
         </div>
       )}
 
-      <div className="reklamlar">
-        <div className="reklam">
-          <img src="reklam1.jpg" alt="Kampanya 1" />
-          <img src="reklam2.png" alt="Kampanya 2" />
-        </div>
-      </div>
+      {/* Özellikler Bölümü */}
+      {!searchPerformed && (
+        <>
+          <div className="features-section">
+            <h2 className="section-title">✨ Neden BiletCepte?</h2>
+            <div className="features-grid">
+              <div className="feature-card">
+                <div className="feature-icon">⚡</div>
+                <h3>Hızlı Arama</h3>
+                <p>Binlerce sefer arasından saniyeler içinde en uygun bileti bul</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">💰</div>
+                <h3>En İyi Fiyat</h3>
+                <p>Tüm firmaları karşılaştır, en uygun fiyatı garantile</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">🔒</div>
+                <h3>Güvenli Ödeme</h3>
+                <p>256-bit SSL ile korunan güvenli ödeme altyapısı</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">📱</div>
+                <h3>Mobil Uyumlu</h3>
+                <p>Her cihazdan kolayca erişim ve bilet satın alma</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">🎫</div>
+                <h3>Anında Bilet</h3>
+                <p>Ödemeniz sonrası biletiniz hemen hazır</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">💬</div>
+                <h3>7/24 Destek</h3>
+                <p>Her zaman yanınızdayız, yardıma hazırız</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Popüler Güzergahlar */}
+          <div className="popular-routes-section">
+            <h2 className="section-title">🔥 Popüler Güzergahlar</h2>
+            <div className="routes-grid">
+              <div className="route-card">
+                <div className="route-cities">
+                  <span>İstanbul</span>
+                  <span className="route-arrow">→</span>
+                  <span>Ankara</span>
+                </div>
+                <p className="route-price">150 TL'den başlayan fiyatlarla</p>
+              </div>
+              <div className="route-card">
+                <div className="route-cities">
+                  <span>İzmir</span>
+                  <span className="route-arrow">→</span>
+                  <span>Antalya</span>
+                </div>
+                <p className="route-price">180 TL'den başlayan fiyatlarla</p>
+              </div>
+              <div className="route-card">
+                <div className="route-cities">
+                  <span>Ankara</span>
+                  <span className="route-arrow">→</span>
+                  <span>İzmir</span>
+                </div>
+                <p className="route-price">140 TL'den başlayan fiyatlarla</p>
+              </div>
+              <div className="route-card">
+                <div className="route-cities">
+                  <span>Bursa</span>
+                  <span className="route-arrow">→</span>
+                  <span>İstanbul</span>
+                </div>
+                <p className="route-price">80 TL'den başlayan fiyatlarla</p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="sorulanSorular">
-        <h2>Sıkça Sorulan Sorular</h2>
+        <h2>❓ Sıkça Sorulan Sorular</h2>
         <div className="soru">
           <h3>BiletCepte'de hangi otobüs firmalarının biletlerini bulabilirim?</h3>
           <p>BiletCepte, Türkiye'nin önde gelen tüm otobüs firmalarının biletlerini tek bir platformda sunmaktadır. Metro Turizm, Pamukkale, Kamil Koç, Ulusoy ve daha birçok güvenilir firma ile çalışıyoruz.</p>
@@ -304,6 +416,31 @@ const DivComponent = () => {
           <h3>Ödeme yöntemleri nelerdir?</h3>
           <p>Kredi kartı, banka kartı ve online ödeme sistemleri ile güvenli bir şekilde ödeme yapabilirsiniz. Tüm ödemeleriniz 256-bit SSL sertifikası ile korunmaktadır.</p>
         </div>
+      </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedBilet && (
+        <PaymentModal
+          bilet={selectedBilet}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedBilet(null);
+          }}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {/* Toast Container */}
+      <div className="toast-container">
+        {toast.toasts.map((t) => (
+          <Toast
+            key={t.id}
+            message={t.message}
+            type={t.type}
+            duration={t.duration}
+            onClose={() => toast.removeToast(t.id)}
+          />
+        ))}
       </div>
     </div>
   );

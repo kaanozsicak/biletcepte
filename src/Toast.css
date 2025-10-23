@@ -1,0 +1,157 @@
+/* Toast.css - Modern bildirim stilleri */
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 99999; /* Modal'ın üstünde olması için çok yüksek */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 500px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: slideInRight 0.3s ease-out;
+  pointer-events: all;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.toast::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.toast:hover {
+  transform: translateX(-5px);
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* Success */
+.toast-success::before {
+  background: linear-gradient(180deg, #0a5c0a, #0d7a0d);
+}
+
+.toast-success {
+  border-left: 4px solid #0a5c0a;
+}
+
+/* Error */
+.toast-error::before {
+  background: linear-gradient(180deg, #dc3545, #c82333);
+}
+
+.toast-error {
+  border-left: 4px solid #dc3545;
+}
+
+/* Warning */
+.toast-warning::before {
+  background: linear-gradient(180deg, #ffc107, #e0a800);
+}
+
+.toast-warning {
+  border-left: 4px solid #ffc107;
+}
+
+/* Info */
+.toast-info::before {
+  background: linear-gradient(180deg, #17a2b8, #138496);
+}
+
+.toast-info {
+  border-left: 4px solid #17a2b8;
+}
+
+.toast-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  animation: popIn 0.4s ease-out;
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #333;
+  word-wrap: break-word;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Mobile responsive */
+@media only screen and (max-width: 768px) {
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+  }
+
+  .toast {
+    min-width: auto;
+    max-width: 100%;
+  }
+}

@@ -4,11 +4,14 @@ import './yardim.css';
 import './biletler.css';
 import Header from './header';
 import { getDatabase, ref, get, remove } from 'firebase/database';
+import { useToast } from './useToast';
+import Toast from './Toast';
 
 const Biletler = () => {
   const [biletler, setBiletler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [kullanici, setKullanici] = useState(null);
+  const toast = useToast();
 
   // Şehir adı getir
   const getSehirAdi = (kod) => {
@@ -44,6 +47,23 @@ const Biletler = () => {
     }
   }, []);
 
+  // Kullanıcı çıkış yaptığında localStorage değişikliğini dinle
+  useEffect(() => {
+    const checkAuth = () => {
+      const kullaniciStr = localStorage.getItem('biletcepte_kullanici');
+      if (!kullaniciStr && kullanici) {
+        // Kullanıcı çıkış yapmış, state'i temizle
+        setKullanici(null);
+        setBiletler([]);
+      }
+    };
+
+    // storage event'i sadece diğer tablardan gelir, aynı tab için interval kullan
+    const interval = setInterval(checkAuth, 500);
+    
+    return () => clearInterval(interval);
+  }, [kullanici]);
+
   // Biletleri Firebase'den çek
   const fetchBiletler = async (email) => {
     try {
@@ -52,27 +72,96 @@ const Biletler = () => {
       const emailKey = email.replace(/[.@]/g, '_');
       const biletlerRef = ref(db, `kullaniciBiletleri/${emailKey}`);
       
+      console.log('📥 Biletler çekiliyor... Email:', email);
+      console.log('📥 Firebase path:', `kullaniciBiletleri/${emailKey}`);
+      
       const snapshot = await get(biletlerRef);
       
       if (snapshot.exists()) {
         const biletlerData = snapshot.val();
+        console.log('📦 Firebase raw data:', biletlerData);
+        console.log('📦 Firebase raw data (stringified):', JSON.stringify(biletlerData, null, 2));
+        
+        // ID'leri map'e çevir - DOĞRU SIRA: Önce spread, sonra ID override!
         const biletlerArray = Object.keys(biletlerData).map(key => ({
-          id: key,
-          ...biletlerData[key]
+          ...biletlerData[key],  // ← Önce bilet datası
+          id: key                 // ← Sonra Firebase key ile override et!
         }));
         
+        console.log('📋 Tüm biletler (sıralama öncesi):', biletlerArray);
+        console.log('📊 Toplam kayıt sayısı:', biletlerArray.length);
+        console.log('📊 Unique key sayısı:', Object.keys(biletlerData).length);
+        
+        // DUPLICATE KONTROLÜ - Aynı ID'yi birden fazla kez görmememiz gerekiyor!
+        const uniqueIds = new Set();
+        const duplicates = [];
+        
+        biletlerArray.forEach(bilet => {
+          if (uniqueIds.has(bilet.id)) {
+            duplicates.push(bilet.id);
+            console.warn('⚠️ DUPLICATE ID BULUNDU:', bilet.id);
+          } else {
+            uniqueIds.add(bilet.id);
+          }
+        });
+        
+        if (duplicates.length > 0) {
+          console.error('❌ HATA: Tekrarlayan ID\'ler tespit edildi:', duplicates);
+          console.error('❌ Bu bir Firebase veri tutarsızlığıdır!');
+          console.log('🔧 Firebase\'den duplicate\'ler temizleniyor...');
+          
+          // FIREBASE'DEN DUPLICATE'LERİ SİL!
+          try {
+            // Unique ID'leri bul
+            const seenIds = new Set();
+            const duplicateIdsToDelete = [];
+            
+            biletlerArray.forEach(bilet => {
+              if (seenIds.has(bilet.id)) {
+                // Bu duplicate, sil!
+                duplicateIdsToDelete.push(bilet.id);
+              } else {
+                seenIds.add(bilet.id);
+              }
+            });
+            
+            // Her duplicate ID'yi Firebase'den sil
+            for (const duplicateId of duplicateIdsToDelete) {
+              const duplicateRef = ref(db, `kullaniciBiletleri/${emailKey}/${duplicateId}`);
+              await remove(duplicateRef);
+              console.log(`🗑️ Duplicate silindi: ${duplicateId}`);
+            }
+            
+            console.log(`✅ ${duplicateIdsToDelete.length} duplicate Firebase'den kalıcı olarak silindi!`);
+          } catch (error) {
+            console.error('❌ Duplicate temizleme hatası:', error);
+          }
+        }
+        
+        // Unique biletler - ID'ye göre deduplicate
+        const uniqueBiletlerMap = new Map();
+        biletlerArray.forEach(bilet => {
+          // Son kaydı tut (en güncel veriyi al)
+          uniqueBiletlerMap.set(bilet.id, bilet);
+        });
+        
+        const uniqueBiletler = Array.from(uniqueBiletlerMap.values());
+        console.log(`✅ Unique biletler: ${uniqueBiletler.length} adet (${biletlerArray.length - uniqueBiletler.length} duplicate silindi)`);
+        
         // Tarihe göre sırala (en yeni önce)
-        biletlerArray.sort((a, b) => 
+        uniqueBiletler.sort((a, b) => 
           new Date(b.satinAlmaTarihi) - new Date(a.satinAlmaTarihi)
         );
         
-        setBiletler(biletlerArray);
+        console.log('📋 Final biletler (sıralı + unique):', uniqueBiletler);
+        setBiletler(uniqueBiletler);
       } else {
+        console.log('📭 Hiç bilet bulunamadı');
         setBiletler([]);
       }
     } catch (error) {
       console.error('❌ Biletler yüklenirken hata:', error);
-      alert('❌ Biletler yüklenirken bir hata oluştu.');
+      toast.error('Biletler yüklenirken bir hata oluştu: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -80,32 +169,46 @@ const Biletler = () => {
 
   // Bilet iptal et
   const handleIptal = async (bilet) => {
-    const onay = window.confirm(
-      `🚫 Bilet İptal Onayı\n\n` +
-      `📍 ${getSehirAdi(bilet.nereden)} → ${getSehirAdi(bilet.nereye)}\n` +
-      `📅 ${formatTarih(bilet.tarih)}\n` +
-      `${bilet.firma ? `🚌 ${bilet.firma}\n` : ''}` +
-      `${bilet.fiyat ? `💰 ${bilet.fiyat} TL\n` : ''}\n\n` +
-      `Bu bileti iptal etmek istediğinizden emin misiniz?\n` +
-      `⚠️ Bu işlem geri alınamaz!`
-    );
-
-    if (!onay) return;
+    console.log('🔍 İptal edilecek bilet:', bilet);
+    console.log('🔍 Bilet ID:', bilet.id);
+    console.log('🔍 Kullanıcı:', kullanici);
+    
+    // Modern confirmation ile değiştirilecek - şimdilik basit onay
+    const detayMesaj = `${getSehirAdi(bilet.nereden)} → ${getSehirAdi(bilet.nereye)} | ${formatTarih(bilet.tarih)} | ${bilet.firma || ''} ${bilet.fiyat ? bilet.fiyat + ' TL' : ''}`;
+    toast.warning(`Bilet iptal ediliyor: ${detayMesaj}`, 5000);
+    
+    // Kısa bir gecikme ekle - kullanıcı toast'u görsün
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
       const db = getDatabase();
       const emailKey = kullanici.email.replace(/[.@]/g, '_');
-      const biletRef = ref(db, `kullaniciBiletleri/${emailKey}/${bilet.id}`);
+      const biletPath = `kullaniciBiletleri/${emailKey}/${bilet.id}`;
       
+      console.log('🔍 Firebase path:', biletPath);
+      
+      // Firebase'den sil
+      const biletRef = ref(db, biletPath);
+      console.log('🗑️ Firebase silme işlemi başlıyor...');
       await remove(biletRef);
+      console.log('✅ Firebase\'den silindi!');
       
-      // Listeyi güncelle
-      setBiletler(biletler.filter(b => b.id !== bilet.id));
+      // State'i güncelle - KALICI silme
+      const oncekiBiletSayisi = biletler.length;
+      const yeniBiletListesi = biletler.filter(b => b.id !== bilet.id);
+      console.log(`📊 Önceki bilet sayısı: ${oncekiBiletSayisi}`);
+      console.log(`📊 Yeni bilet sayısı: ${yeniBiletListesi.length}`);
+      console.log('🔄 State güncelleniyor...');
       
-      alert('✅ Bilet başarıyla iptal edildi!');
+      setBiletler(yeniBiletListesi);
+      console.log('✅ State güncellendi!');
+      
+      toast.success('Bilet başarıyla iptal edildi!');
     } catch (error) {
       console.error('❌ Bilet iptal hatası:', error);
-      alert('❌ Bilet iptal edilirken bir hata oluştu.');
+      console.error('❌ Hata detayı:', error.message);
+      console.error('❌ Stack trace:', error.stack);
+      toast.error('Bilet iptal edilirken bir hata oluştu: ' + error.message);
     }
   };
 
@@ -161,8 +264,8 @@ const Biletler = () => {
             Toplam {biletler.length} biletiniz bulunmaktadır
           </p>
           
-          {biletler.map((bilet) => (
-            <div key={bilet.id} className="bilet-karti-detayli">
+          {biletler.map((bilet, index) => (
+            <div key={`${bilet.id}-${index}`} className="bilet-karti-detayli">
               <div className="bilet-header">
                 <div className="bilet-route">
                   <h3>{getSehirAdi(bilet.nereden)} → {getSehirAdi(bilet.nereye)}</h3>
@@ -246,6 +349,19 @@ const Biletler = () => {
           💡 PDF indirme ve QR kod özellikleri yakında eklenecektir!
         </p>
       </div>
+    </div>
+
+    {/* Toast Container */}
+    <div className="toast-container">
+      {toast.toasts.map((t) => (
+        <Toast
+          key={t.id}
+          message={t.message}
+          type={t.type}
+          duration={t.duration}
+          onClose={() => toast.removeToast(t.id)}
+        />
+      ))}
     </div>
     </>
   );
