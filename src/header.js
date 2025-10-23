@@ -1,18 +1,23 @@
 //header.js
 import React, { useState, useEffect } from 'react';
 import './header.css';
-import { getDatabase, ref, push, child } from 'firebase/database';
-import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, push, child, get } from 'firebase/database';
 import { Link } from 'react-router-dom';
-let {set, get,onValue, remove, update} = require('firebase/database');
 
 const Header = () => {
   const [currentBaslik, setCurrentBaslik] = useState("Artık");
   const [slidingText, setSlidingText] = useState("Biletler Cepte!");
   const [isModalOpenGiris, setIsModalOpenGiris] = useState(false);
   const [isModalOpenKayit, setIsModalOpenKayit] = useState(false);
+  const [kullanici, setKullanici] = useState(null); // Giriş yapmış kullanıcı
   
-
+  // Sayfa yüklendiğinde localStorage'dan kullanıcıyı kontrol et
+  useEffect(() => {
+    const kaydedilmisKullanici = localStorage.getItem('biletcepte_kullanici');
+    if (kaydedilmisKullanici) {
+      setKullanici(JSON.parse(kaydedilmisKullanici));
+    }
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,40 +38,100 @@ const Header = () => {
   function Kayit(){
     const email = document.getElementById("mail").value;
     const password = document.getElementById("sifre").value;
-    setIsModalOpenKayit(false);
+    
+    // Boş alan kontrolü
+    if (!email || !password) {
+      alert("⚠️ Lütfen tüm alanları doldurun!");
+      return;
+    }
+    
+    // E-posta formatı kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert("⚠️ Geçerli bir e-posta adresi girin!");
+      return;
+    }
+    
+    // Şifre uzunluğu kontrolü
+    if (password.length < 6) {
+      alert("⚠️ Şifre en az 6 karakter olmalıdır!");
+      return;
+    }
+    
     push(ref(vt,'kullanicilar/'), { email, password })
     .then(() => {
-    console.log("Veri başarıyla eklendi!");
-  })
-  .catch((error) => {
-    console.error("Veri eklenirken hata oluştu:", error);
-  });
+      console.log("✅ Kayıt başarılı!");
+      alert(`🎉 Kayıt Başarılı!\n\nHesabınız oluşturuldu.\nŞimdi giriş yapabilirsiniz.`);
+      setIsModalOpenKayit(false);
+    })
+    .catch((error) => {
+      console.error("Kayıt hatası:", error);
+      
+      // Firebase izin hatası kontrolü
+      if (error.code === 'PERMISSION_DENIED') {
+        alert("🔒 Veritabanı Erişim Hatası\n\nFirebase Realtime Database kuralları ayarlanmalı.\n\nGeçici çözüm: Firebase Console'dan şu kuralı ekleyin:\n\n{\n  \"rules\": {\n    \".read\": true,\n    \".write\": true\n  }\n}");
+      } else {
+        alert("❌ Bir hata oluştu!\n\nLütfen tekrar deneyin.");
+      }
+    });
     }
 
     function Giris(){
      const mail = document.getElementById("mailg").value;
      const sifre = document.getElementById("sifreg").value;
-     setIsModalOpenGiris(false);
+     
+     // Boş alan kontrolü
+     if (!mail || !sifre) {
+       alert("⚠️ Lütfen e-posta ve şifre alanlarını doldurun!");
+       return;
+     }
+
      get(child(vtRef, `kullanicilar/`)).then((snapshot) => {
+      let girisBasarili = false;
+      
       if (snapshot.exists()) {
         snapshot.forEach((userSnapshot) => {
-          const userData = userSnapshot.val(); // Kullanıcı verileri
+          const userData = userSnapshot.val();
           const email = userData.email;
           const password = userData.password;
     
-          console.log(email);
-          console.log(password);
-    
           if (mail === email && sifre === password) {
-            console.log("Giriş Başarılı");
-            return; // Giriş başarılıysa döngüden çık
+            girisBasarili = true;
+            
+            // Kullanıcı bilgilerini kaydet
+            const kullaniciBilgi = {
+              email: email,
+              girisZamani: new Date().toISOString()
+            };
+            
+            // State'i güncelle
+            setKullanici(kullaniciBilgi);
+            
+            // localStorage'a kaydet
+            localStorage.setItem('biletcepte_kullanici', JSON.stringify(kullaniciBilgi));
+            
+            console.log("✅ Giriş Başarılı");
+            alert(`🎉 Hoş geldiniz!\n\n${email}\n\nGiriş başarılı oldu.`);
+            setIsModalOpenGiris(false);
+            return;
           }
         });
+        
+        if (!girisBasarili) {
+          alert("❌ Hatalı giriş!\n\nE-posta veya şifre yanlış.");
+        }
       } else {
-        console.log("No data available");
+        alert("⚠️ Sistemde kayıtlı kullanıcı bulunamadı.\n\nLütfen önce kayıt olun.");
       }
     }).catch((error) => {
-      console.error(error);
+      console.error("Giriş hatası:", error);
+      
+      // Firebase izin hatası kontrolü
+      if (error.code === 'PERMISSION_DENIED') {
+        alert("🔒 Veritabanı Erişim Hatası\n\nFirebase Realtime Database kuralları ayarlanmalı.\n\nGeçici çözüm: Firebase Console'dan şu kuralı ekleyin:\n\n{\n  \"rules\": {\n    \".read\": true,\n    \".write\": true\n  }\n}");
+      } else {
+        alert("❌ Bir hata oluştu!\n\nLütfen internet bağlantınızı kontrol edin.");
+      }
     });
 }
 
@@ -83,64 +148,137 @@ const Header = () => {
     setIsModalOpenKayit(true);
   };
 
+  const handleCikisClick = () => {
+    // Kullanıcıdan onay al
+    const onay = window.confirm("🚪 Çıkış yapmak istediğinize emin misiniz?");
+    if (onay) {
+      // State'i temizle
+      setKullanici(null);
+      // localStorage'ı temizle
+      localStorage.removeItem('biletcepte_kullanici');
+      alert("👋 Başarıyla çıkış yaptınız!\n\nTekrar görüşmek üzere.");
+    }
+  };
+
 
 
   return (
-    <div className="header">
-      <div className="logo">
-        <img src="logowithoutback.png" alt="Logo" width="200" height="200" />
-      </div>
-      <div>
-        <h1 className="baslik">
-          {currentBaslik} <span className="sliding-text">{slidingText}</span>
-        </h1>
-      </div>
+    <>
+      <div className="header">
+        <div className="header-container">
+          <div className="logo">
+            <img src="logowithoutback.png" alt="BiletCepte Logo" />
+            <div className="brand-section">
+              <h1 className="baslik">
+                {currentBaslik} <span className="sliding-text">{slidingText}</span>
+              </h1>
+              <div className='basliklar'>
+                <div className="feature-badge">
+                  <img src="fast.png" alt="Hızlı" />
+                  <span>Hızlı</span>
+                </div>
+                <div className="feature-badge">
+                  <img src="safe.png" alt="Güvenilir" />
+                  <span>Güvenilir</span>
+                </div>
+                <div className="feature-badge">
+                  <img src="wallet.png" alt="Ekonomik" />
+                  <span>Ekonomik</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      <div className='basliklar'>
-        <h2 className="smallbaslik1">Hızlı<img src="fast.png" width="50" height="35" alt="Fast" /></h2>
-        <h2 className="smallbaslik2">Güvenilir<img src="safe.png" width="33" height="30" alt="Safe" /></h2>
-        <h2 className="smallbaslik3">Ekonomik<img src="wallet.png" width="33" height="33" alt="Wallet" /></h2>
-      </div>
-
-      <div className="menu">
-        <div className="menuItem" onClick={handleGirisClick}>
-          <h3>Giriş</h3>
-        </div>
-        <div className="menuItem" onClick={handleKayitClick}>
-          <h3>Kayıt Ol</h3>
-        </div>
-        <div className="menuItem" >
-          <h3><Link to="/help">Yardım</Link></h3>
-        </div>
-        <div className="menuItem">
-          <h3>İletişim</h3>
+          <div className="menu">
+            {!kullanici ? (
+              // Kullanıcı giriş yapmamışsa
+              <>
+                <Link to="/" className="menuItem">
+                  <span className="menu-icon">🏠</span>
+                  <span className="menu-text">Ana Sayfa</span>
+                </Link>
+                <div className="menuItem" onClick={handleGirisClick}>
+                  <span className="menu-icon">🔐</span>
+                  <span className="menu-text">Giriş Yap</span>
+                </div>
+                <div className="menuItem" onClick={handleKayitClick}>
+                  <span className="menu-icon">✨</span>
+                  <span className="menu-text">Kayıt Ol</span>
+                </div>
+                <Link to="/help" className="menuItem">
+                  <span className="menu-icon">❓</span>
+                  <span className="menu-text">Yardım</span>
+                </Link>
+                <Link to="/iletisim" className="menuItem">
+                  <span className="menu-icon">📞</span>
+                  <span className="menu-text">İletişim</span>
+                </Link>
+              </>
+            ) : (
+              // Kullanıcı giriş yapmışsa
+              <>
+                <Link to="/" className="menuItem">
+                  <span className="menu-icon">🏠</span>
+                  <span className="menu-text">Ana Sayfa</span>
+                </Link>
+                <Link to="/biletler" className="menuItem">
+                  <span className="menu-icon">🎫</span>
+                  <span className="menu-text">Biletlerim</span>
+                </Link>
+                <Link to="/help" className="menuItem">
+                  <span className="menu-icon">❓</span>
+                  <span className="menu-text">Yardım</span>
+                </Link>
+                <Link to="/iletisim" className="menuItem">
+                  <span className="menu-icon">📞</span>
+                  <span className="menu-text">İletişim</span>
+                </Link>
+                <Link to="/admin" className="menuItem">
+                  <span className="menu-icon">⚙️</span>
+                  <span className="menu-text">Admin</span>
+                </Link>
+                <div className="menuItem user-info">
+                  <span className="menu-icon">👤</span>
+                  <span className="menu-text">{kullanici.email.split('@')[0]}</span>
+                </div>
+                <div className="menuItem logout-item" onClick={handleCikisClick}>
+                  <span className="menu-icon">🚪</span>
+                  <span className="menu-text">Çıkış</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {isModalOpenKayit && (
-        <div className="modal-overlay">
-          <div className="modal">
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
             <span className="close" onClick={handleCloseModal}>&times;</span>
             <h2>Kayıt Ol</h2>
-            <input className= 'kayitinput1' type="text" id = "mail" placeholder ="E-Mail" />
-            <input className= 'kayitinput2' type="password" id ="sifre" placeholder="Şifre" />
-            <input className= 'kayitinput3' type='submit' value = "Kayıt Ol" onClick={Kayit}></input>
+            <div className="modal-form">
+              <input className='modal-input' type="email" id="mail" placeholder="E-Mail" required />
+              <input className='modal-input' type="password" id="sifre" placeholder="Şifre" required />
+              <button className='modal-submit' onClick={Kayit}>Kayıt Ol</button>
+            </div>
           </div>
         </div>
       )}
 
-{isModalOpenGiris && (
-        <div className="modal-overlay">
-          <div className="modal">
+      {isModalOpenGiris && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
             <span className="close" onClick={handleCloseModal}>&times;</span>
             <h2>Giriş Yap</h2>
-            <input className= 'girisinput1' type="text" id = "mailg" placeholder ="E-Mail" />
-            <input className= 'kayitinput2' type="password" id ="sifreg" placeholder="Şifre" />
-            <input className= 'kayitinput3' type='submit' value = "Giriş" onClick={Giris}></input>
+            <div className="modal-form">
+              <input className='modal-input' type="email" id="mailg" placeholder="E-Mail" required />
+              <input className='modal-input' type="password" id="sifreg" placeholder="Şifre" required />
+              <button className='modal-submit' onClick={Giris}>Giriş Yap</button>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

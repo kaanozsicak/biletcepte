@@ -1,0 +1,17 @@
+EKSIK GÖRSEL DOSYALARI
+=======================
+
+Bu klasöre aşağıdaki görsel dosyalarını eklemeniz gerekiyor:
+
+1. logowithoutback.png (200x200 px) - Ana logo
+2. fast.png (50x35 px) - Hızlı ikonu
+3. safe.png (33x30 px) - Güvenilir ikonu  
+4. wallet.png (33x33 px) - Ekonomik ikonu
+5. reklam1.jpg (600x300 px) - Reklam görseli 1
+6. reklam2.png (600x300 px) - Reklam görseli 2
+
+Geçici çözüm: Bu görseller yüklenene kadar placeholder görseller veya alternatif ikonlar kullanabilirsiniz.
+
+Örnek placeholder servisler:
+- https://via.placeholder.com/200x200
+- https://placehold.co/200x200

@@ -1,0 +1,548 @@
+/* admin.css */
+
+/* Admin Login Page */
+.admin-login {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.admin-login-box {
+  background: #fff;
+  border-radius: 25px;
+  padding: 50px 40px;
+  box-shadow: 0 20px 60px rgba(10, 92, 10, 0.15);
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-login-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #0a5c0a, #0d7a0d, #0a5c0a);
+}
+
+.admin-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.admin-login-box h1 {
+  color: #0a5c0a;
+  font-size: 32px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.admin-login-box > p {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 16px;
+}
+
+.admin-login-box .form-group {
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+.admin-login-box label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0a5c0a;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.label-icon {
+  font-size: 18px;
+}
+
+.admin-login-box input {
+  width: 100%;
+  padding: 14px 18px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background: #fafafa;
+}
+
+.admin-login-box input:focus {
+  outline: none;
+  border-color: #0a5c0a;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(10, 92, 10, 0.1);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #0a5c0a 0%, #0d7a0d 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(10, 92, 10, 0.3);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+}
+
+.admin-info {
+  margin-top: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  text-align: left;
+}
+
+.admin-info p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.admin-info strong {
+  color: #0a5c0a;
+}
+
+/* Admin Panel */
+.admin-panel {
+  max-width: 1400px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  padding: 30px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(10, 92, 10, 0.08);
+}
+
+.admin-title h1 {
+  color: #0a5c0a;
+  font-size: 36px;
+  margin-bottom: 5px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0a5c0a 0%, #0d7a0d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.admin-title p {
+  color: #666;
+  font-size: 16px;
+}
+
+.logout-btn {
+  padding: 12px 24px;
+  background: #fff;
+  border: 2px solid #0a5c0a;
+  color: #0a5c0a;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #0a5c0a;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 92, 10, 0.2);
+}
+
+/* Form Container */
+.admin-form-container {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(10, 92, 10, 0.08);
+  margin-bottom: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-form-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #0a5c0a, #0d7a0d, #0a5c0a);
+}
+
+.form-header {
+  margin-bottom: 30px;
+}
+
+.form-header h2 {
+  color: #0a5c0a;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* Admin Form */
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.admin-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-form label {
+  color: #0a5c0a;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.required {
+  color: #e74c3c;
+  font-weight: 700;
+}
+
+.admin-form input,
+.admin-form select {
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  background: #fafafa;
+}
+
+.admin-form input:focus,
+.admin-form select:focus {
+  outline: none;
+  border-color: #0a5c0a;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(10, 92, 10, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.submit-btn {
+  flex: 1;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #0a5c0a 0%, #0d7a0d 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(10, 92, 10, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.update-btn {
+  background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+}
+
+.cancel-btn {
+  padding: 14px 28px;
+  background: #fff;
+  border: 2px solid #e74c3c;
+  color: #e74c3c;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+/* Bilet Listesi */
+.admin-biletler {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(10, 92, 10, 0.08);
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.list-header h2 {
+  color: #0a5c0a;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.refresh-btn {
+  padding: 10px 20px;
+  background: #fff;
+  border: 2px solid #0a5c0a;
+  color: #0a5c0a;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #0a5c0a;
+  color: #fff;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 20px;
+}
+
+.loading-container p {
+  color: #0a5c0a;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.empty-icon {
+  font-size: 72px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  color: #0a5c0a;
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.empty-state p {
+  color: #666;
+  font-size: 16px;
+}
+
+/* Bilet Tablosu */
+.bilet-table-container {
+  overflow-x: auto;
+}
+
+.bilet-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bilet-table thead {
+  background: linear-gradient(135deg, #0a5c0a 0%, #0d7a0d 100%);
+}
+
+.bilet-table th {
+  color: #fff;
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bilet-table th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.bilet-table th:last-child {
+  border-top-right-radius: 12px;
+}
+
+.bilet-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.bilet-table tbody tr:hover {
+  background: #f8fafb;
+}
+
+.bilet-table td {
+  padding: 16px 12px;
+  color: #555;
+  font-size: 15px;
+}
+
+.bilet-table td .arrow {
+  margin: 0 8px;
+  color: #0a5c0a;
+  font-weight: 700;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.edit-btn,
+.delete-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-btn {
+  background: #3498db;
+  color: #fff;
+}
+
+.edit-btn:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.delete-btn {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+/* Responsive */
+@media only screen and (max-width: 768px) {
+  .admin-header {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .admin-title h1 {
+    font-size: 28px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .bilet-table {
+    font-size: 13px;
+  }
+
+  .bilet-table th,
+  .bilet-table td {
+    padding: 10px 8px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .admin-login-box {
+    padding: 40px 30px;
+  }
+
+  .admin-panel {
+    padding: 0 15px;
+  }
+
+  .admin-form-container,
+  .admin-biletler {
+    padding: 25px 20px;
+  }
+
+  .bilet-table-container {
+    overflow-x: scroll;
+  }
+
+  .bilet-table {
+    min-width: 600px;
+  }
+}
