@@ -334,10 +334,10 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ## 👨‍💻 Geliştirici
 
-**Kaan Özsıçak**
+**Kaan Özsıcak**
 
 - GitHub: [@kaanozsicak](https://github.com/kaanozsicak)
-- LinkedIn: [Kaan Özsıçak](https://linkedin.com/in/kaanozsicak)
+- LinkedIn: [Kaan Özsıcak](https://linkedin.com/in/kaanozsicak)
 
 ---
 
