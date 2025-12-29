@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import './PaymentModal.css';
 import { useToast } from './useToast';
 import Toast from './Toast';
+import { CloseIcon, CreditCardIcon, TicketIcon, UserIcon, DocumentTextIcon, CalendarIcon, LockClosedIcon, LoadingSpinner, CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, PhoneIcon } from './Icons';
 
 const PaymentModal = ({ bilet, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -191,11 +192,11 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
   return (
     <div className="payment-modal-overlay" onClick={onClose}>
       <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="payment-modal-close" onClick={onClose}>✕</button>
+        <button className="payment-modal-close" onClick={onClose}><CloseIcon size={20} /></button>
 
         {/* Header */}
         <div className="payment-modal-header">
-          <h2>💳 Ödeme Bilgileri</h2>
+          <h2><CreditCardIcon size={24} color="#0a5c0a" /> Ödeme Bilgileri</h2>
           <div className="payment-steps">
             <div className={`payment-step ${paymentStep >= 1 ? 'active' : ''}`}>1. Bilgiler</div>
             <div className={`payment-step ${paymentStep >= 2 ? 'active' : ''}`}>2. Kart</div>
@@ -204,7 +205,7 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
 
         {/* Bilet Özeti */}
         <div className="payment-summary">
-          <h3>🎫 Bilet Özeti</h3>
+          <h3><TicketIcon size={20} color="#0a5c0a" /> Bilet Özeti</h3>
           <div className="summary-row">
             <span>Güzergah:</span>
             <strong>{bilet.nereden} → {bilet.nereye}</strong>
@@ -227,7 +228,7 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
         {paymentStep === 1 && (
           <div className="payment-form">
             <div className="form-group">
-              <label>👤 Ad Soyad *</label>
+              <label><UserIcon size={16} /> Ad Soyad *</label>
               <input
                 type="text"
                 name="userName"
@@ -241,7 +242,7 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
             </div>
 
             <div className="form-group">
-              <label>📱 Telefon Numarası *</label>
+              <label><PhoneIcon size={16} /> Telefon Numarası *</label>
               <input
                 type="tel"
                 name="userPhone"
@@ -259,7 +260,7 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
               onClick={handleNext}
               disabled={loading}
             >
-              {loading ? '⏳ Yükleniyor...' : 'İleri →'}
+              {loading ? <><LoadingSpinner size={18} /> Yükleniyor...</> : 'İleri →'}
             </button>
           </div>
         )}
@@ -268,14 +269,14 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
         {paymentStep === 2 && (
           <div className="payment-form">
             <div className="test-cards-info">
-              <p>🧪 <strong>Test Kartları:</strong></p>
-              <p>✅ Başarılı: 4242 4242 4242 4242 | Expire: 12/25 | CVV: 123</p>
-              <p>❌ Başarısız: 4000 0000 0000 0002 | Expire: 12/25 | CVV: 123</p>
-              <p>⚠️ Diğer kartlar geçerli ise %90 başarı oranıyla çalışır</p>
+              <p><CreditCardIcon size={16} /> <strong>Test Kartları:</strong></p>
+              <p><CheckCircleIcon size={14} color="#10b981" /> Başarılı: 5528 7900 0000 0008 | Expire: 12/30 | CVV: 123</p>
+              <p><XCircleIcon size={14} color="#ef4444" /> Başarısız: 5406 6700 0000 0009 | Expire: 12/30 | CVV: 123</p>
+              <p><ExclamationTriangleIcon size={14} color="#f59e0b" /> iyzico Sandbox - Gerçek ödeme yapılmaz</p>
             </div>
 
             <div className="form-group">
-              <label>💳 Kart Numarası *</label>
+              <label><CreditCardIcon size={16} /> Kart Numarası *</label>
               <input
                 type="text"
                 name="cardNumber"
@@ -290,7 +291,7 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
             </div>
 
             <div className="form-group">
-              <label>📝 Kart Üzerindeki İsim *</label>
+              <label><DocumentTextIcon size={16} /> Kart Üzerindeki İsim *</label>
               <input
                 type="text"
                 name="cardHolder"
@@ -306,7 +307,7 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
 
             <div className="form-row">
               <div className="form-group">
-                <label>📅 Son Kullanma *</label>
+                <label><CalendarIcon size={16} /> Son Kullanma *</label>
                 <input
                   type="text"
                   name="expiryDate"
@@ -321,7 +322,7 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
               </div>
 
               <div className="form-group">
-                <label>🔒 CVV *</label>
+                <label><LockClosedIcon size={16} /> CVV *</label>
                 <input
                   type="text"
                   name="cvv"
@@ -349,7 +350,7 @@ const PaymentModal = ({ bilet, onClose, onSuccess }) => {
                 onClick={handlePayment}
                 disabled={loading}
               >
-                {loading ? '⏳ İşleniyor...' : `${bilet.fiyat} TL Öde`}
+                {loading ? <><LoadingSpinner size={18} /> İşleniyor...</> : `${bilet.fiyat} TL Öde`}
               </button>
             </div>
           </div>

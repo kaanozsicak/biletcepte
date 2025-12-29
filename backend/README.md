@@ -1,39 +1,51 @@
 # 💳 BiletCepte Payment Backend
 
-Modern ve güvenli ödeme işleme backend servisi.
+iyzico Sandbox entegrasyonlu modern ödeme backend servisi.
 
 ---
 
-## 🚀 Hızlı Başlangıç
+## 🚀 Hızlı Başlangıt
 
-1. **Backend klasörüne girin:**
-```bash
-cd backend
-```
-
-2. **Paketleri yükleyin:**
+1. **Ana dizinden paketleri yükleyin:**
 ```bash
 npm install
 ```
 
-3. **Sunucuyu başlatın:**
+2. **Environment dosyasını ayarlayın:**
 ```bash
-npm start
+cp backend/.env.example backend/.env
+# .env dosyasını düzenleyerek kendi iyzico API anahtarlarınızı girin
+```
+
+3. **Backend sunucusunu başlatın:**
+```bash
+npm run server
+```
+
+Veya geliştirme modunda (hot-reload):
+```bash
+npm run server:dev
 ```
 
 Backend sunucusu `http://localhost:5000` adresinde çalışacak.
 
-## 🧪 Test Kartları
+## 🧪 iyzico Sandbox Test Kartları
 
-### ✅ Başarılı Ödeme
-- **Kart:** 4242 4242 4242 4242
-- **Son Kullanma:** Herhangi (gelecek tarih)
-- **CVV:** 123 veya herhangi 3 haneli
+### ✅ Başarılı Ödeme (Non-3DS)
+| Kart Numarası | Tip | CVV | Son Kullanma |
+|---------------|-----|-----|--------------|
+| 5528 7900 0000 0008 | Mastercard | 123 | 12/30 |
+| 5504 7200 0000 0003 | Mastercard | 123 | 12/30 |
+| 4603 4500 0000 0000 | Visa | 123 | 12/30 |
+| 4543 6000 0000 0001 | Visa (Debit) | 123 | 12/30 |
 
-### ❌ Başarısız Ödeme (Test)
-- **Kart:** 4000 0000 0000 0002
-- **Son Kullanma:** Herhangi (gelecek tarih)
-- **CVV:** 123 veya herhangi 3 haneli
+### ❌ Başarısız Ödeme (Yetersiz Bakiye)
+| Kart Numarası | Tip | Beklenen Hata |
+|---------------|-----|---------------|
+| 5406 6700 0000 0009 | Mastercard | Yetersiz bakiye |
+| 4111 1111 1111 1129 | Visa | Genel hata |
+
+> **Not:** Tüm test kartları için CVV: `123`, Son Kullanma: gelecek bir tarih (örn: `12/30`)
 
 ## 📡 API Endpoints
 
@@ -56,16 +68,16 @@ Content-Type: application/json
 }
 ```
 
-### 3. Ödeme İşleme
+### 3. Ödeme İşleme (iyzico)
 ```
 POST /api/payment/process
 Content-Type: application/json
 
 {
   "paymentId": "uuid",
-  "cardNumber": "4242424242424242",
+  "cardNumber": "5528790000000008",
   "cardHolder": "AHMET YILMAZ",
-  "expiryDate": "12/25",
+  "expiryDate": "12/30",
   "cvv": "123"
 }
 ```
@@ -80,38 +92,50 @@ GET /api/payment/status/:paymentId
 ```env
 PORT=5000
 NODE_ENV=development
-PAYMENT_SECRET_KEY=biletcepte_super_secret_key_2024
-PAYMENT_SUCCESS_RATE=0.9
+
+# iyzico Configuration
+IYZIPAY_URI=https://sandbox-api.iyzipay.com
+IYZIPAY_API_KEY=sandbox-afXhZPW0MQlE4dCUUlHcEopsVRGjX5MH
+IYZIPAY_SECRET_KEY=sandbox-wbwpzKIiplZxI3hh5ALI3BKSoLXrPCvP
 ```
 
-**PAYMENT_SUCCESS_RATE:** Test ortamında ödeme başarı oranı (0.9 = %90 başarılı)
+### iyzico API Anahtarları Alma
+
+1. **Sandbox için:** [sandbox-merchant.iyzipay.com](https://sandbox-merchant.iyzipay.com) adresinden kayıt olun
+2. **Production için:** [merchant.iyzipay.com](https://merchant.iyzipay.com) adresinden başvurun
 
 ## 🔒 Güvenlik
 
-- Production'da gerçek bir ödeme gateway'i (Stripe, PayTR, İyzico) kullanın
-- API anahtarlarını `.env` dosyasında saklayın
-- `.env` dosyasını `.gitignore`'a ekleyin
-- HTTPS kullanın
-- Rate limiting ekleyin
-- Input validation yapın
+- `.env` dosyasını **asla git'e commit etmeyin**
+- Kart bilgilerini **loglama** (sadece son 4 hane saklanır)
+- Production'da **HTTPS** kullanın
+- **Rate limiting** ekleyin
+- **Input validation** aktif
 
-## 📝 Notlar
+## 📝 Mimari Notlar
 
-- Bu backend **TEST AMAÇLI** bir simülasyondur
-- Gerçek para işlemi yapmaz
-- Production'da gerçek bir payment provider kullanılmalıdır
-- Ödeme verisi in-memory'de saklanır (server restart'ta kaybolur)
-- Production'da gerçek bir database kullanın (MongoDB, PostgreSQL, vb.)
+### Mevcut Yapı (Non-3DS)
+- Frontend kart bilgilerini alır → Backend'e gönderir → iyzico API'ye POST → Sonuç döner
+- 3DS gerektirmez, sandbox'ta doğrudan çalışır
 
-## 🎯 Production İçin Yapılacaklar
+### TODO: 3DS / CheckoutForm Geçişi
+- 3DS için `callbackUrl` HTTPS olmalı
+- Local'de test için [ngrok](https://ngrok.com/) veya [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/) kullanın
+- CheckoutForm widget'ı daha güvenli PCI-DSS compliant akış sağlar
 
-1. Gerçek payment provider entegrasyonu (İyzico, PayTR, Stripe)
-2. Database entegrasyonu (MongoDB, PostgreSQL)
-3. Authentication & Authorization
-4. Rate limiting
-5. Logging & Monitoring
-6. Error handling iyileştirmeleri
-7. HTTPS/SSL sertifikası
-8. Environment-based configuration
-9. Unit & Integration tests
-10. CI/CD pipeline
+## 🎯 Production Checklist
+
+- [ ] Gerçek iyzico API anahtarları (`IYZIPAY_URI=https://api.iyzipay.com`)
+- [ ] HTTPS/SSL sertifikası
+- [ ] Database entegrasyonu (ödeme logları için)
+- [ ] Gerçek TC Kimlik No alanı (buyer.identityNumber)
+- [ ] Rate limiting & DDoS koruması
+- [ ] Error monitoring (Sentry vb.)
+- [ ] 3DS/SecurePay entegrasyonu
+- [ ] İptal/İade endpoint'leri
+
+## 📚 Kaynaklar
+
+- [iyzico API Dokümantasyonu](https://dev.iyzipay.com/)
+- [iyzico Node.js SDK](https://github.com/iyzico/iyzipay-node)
+- [Sandbox Merchant Panel](https://sandbox-merchant.iyzipay.com)

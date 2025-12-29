@@ -1,6 +1,7 @@
 // Toast.js - Modern bildirim sistemi
 import React, { useEffect } from 'react';
 import './Toast.css';
+import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from './Icons';
 
 const Toast = ({ message, type = 'info', duration = 3000, onClose }) => {
   useEffect(() => {
@@ -14,14 +15,14 @@ const Toast = ({ message, type = 'info', duration = 3000, onClose }) => {
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return '✅';
+        return <CheckCircleIcon size={20} color="#10b981" />;
       case 'error':
-        return '❌';
+        return <XCircleIcon size={20} color="#ef4444" />;
       case 'warning':
-        return '⚠️';
+        return <ExclamationTriangleIcon size={20} color="#f59e0b" />;
       case 'info':
       default:
-        return 'ℹ️';
+        return <InformationCircleIcon size={20} color="#3b82f6" />;
     }
   };
 

@@ -5,6 +5,7 @@ import Header from './header';
 import { getDatabase, ref, push, get, remove, update } from 'firebase/database';
 import { useToast } from './useToast';
 import Toast from './Toast';
+import { LightBulbIcon, ExclamationTriangleIcon, TicketIcon, LogoutIcon, PencilIcon, PlusIcon, MapPinIcon, CalendarIcon, BusIcon, ClockIcon, CreditCardIcon, DocumentTextIcon, CheckCircleIcon, XCircleIcon, TrashIcon, LoadingSpinner, RefreshIcon, ClipboardListIcon, ChairIcon } from './Icons';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -299,8 +300,8 @@ const Admin = () => {
             </form>
             
             <div className="admin-info">
-              <p>💡 <strong>Test Şifresi:</strong> admin123</p>
-              <p>⚠️ Güvenlik için şifreyi değiştirin!</p>
+              <p><LightBulbIcon size={16} color="#f59e0b" /> <strong>Test Şifresi:</strong> admin123</p>
+              <p><ExclamationTriangleIcon size={16} color="#ef4444" /> Güvenlik için şifreyi değiştirin!</p>
             </div>
           </div>
         </div>
@@ -315,25 +316,25 @@ const Admin = () => {
       <div className="admin-panel">
         <div className="admin-header">
           <div className="admin-title">
-            <h1>🎫 Admin Paneli</h1>
+            <h1><TicketIcon size={28} color="#0a5c0a" /> Admin Paneli</h1>
             <p>Bilet yönetim sistemi</p>
           </div>
           <button onClick={handleLogout} className="logout-btn">
-            🚪 Çıkış Yap
+            <LogoutIcon size={18} /> Çıkış Yap
           </button>
         </div>
 
         {/* Bilet Ekleme/Düzenleme Formu */}
         <div className="admin-form-container">
           <div className="form-header">
-            <h2>{editingBilet ? '✏️ Bilet Düzenle' : '➕ Yeni Bilet Ekle'}</h2>
+            <h2>{editingBilet ? <><PencilIcon size={22} /> Bilet Düzenle</> : <><PlusIcon size={22} /> Yeni Bilet Ekle</>}</h2>
           </div>
           
           <form onSubmit={editingBilet ? handleUpdateBilet : handleAddBilet} className="admin-form">
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="nereden">
-                  📍 Nereden <span className="required">*</span>
+                  <MapPinIcon size={16} /> Nereden <span className="required">*</span>
                 </label>
                 <select
                   id="nereden"
@@ -369,7 +370,7 @@ const Admin = () => {
 
               <div className="form-group">
                 <label htmlFor="tarih">
-                  📅 Tarih <span className="required">*</span>
+                  <CalendarIcon size={16} /> Tarih <span className="required">*</span>
                 </label>
                 <input
                   type="date"
@@ -385,7 +386,7 @@ const Admin = () => {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="firma">
-                  🚌 Firma
+                  <BusIcon size={16} /> Firma
                 </label>
                 <input
                   type="text"
@@ -399,7 +400,7 @@ const Admin = () => {
 
               <div className="form-group">
                 <label htmlFor="saat">
-                  ⏰ Kalkış Saati
+                  <ClockIcon size={16} /> Kalkış Saati
                 </label>
                 <input
                   type="time"
@@ -412,7 +413,7 @@ const Admin = () => {
 
               <div className="form-group">
                 <label htmlFor="fiyat">
-                  💰 Fiyat (TL)
+                  <CreditCardIcon size={16} /> Fiyat (TL)
                 </label>
                 <input
                   type="number"
@@ -427,7 +428,7 @@ const Admin = () => {
 
               <div className="form-group">
                 <label htmlFor="koltukSayisi">
-                  🪑 Boş Koltuk
+                  <ChairIcon size={16} /> Boş Koltuk
                 </label>
                 <input
                   type="number"
@@ -445,15 +446,15 @@ const Admin = () => {
               {editingBilet ? (
                 <>
                   <button type="submit" className="submit-btn update-btn" disabled={loading}>
-                    {loading ? '⏳ Güncelleniyor...' : '✅ Güncelle'}
+                    {loading ? <><LoadingSpinner size={16} /> Güncelleniyor...</> : <><CheckCircleIcon size={16} /> Güncelle</>}
                   </button>
                   <button type="button" onClick={handleCancelEdit} className="cancel-btn">
-                    ❌ İptal
+                    <XCircleIcon size={16} /> İptal
                   </button>
                 </>
               ) : (
                 <button type="submit" className="submit-btn" disabled={loading}>
-                  {loading ? '⏳ Ekleniyor...' : '➕ Bilet Ekle'}
+                  {loading ? <><LoadingSpinner size={16} /> Ekleniyor...</> : <><PlusIcon size={16} /> Bilet Ekle</>}
                 </button>
               )}
             </div>
@@ -463,9 +464,9 @@ const Admin = () => {
         {/* Bilet Listesi */}
         <div className="admin-biletler">
           <div className="list-header">
-            <h2>📋 Mevcut Biletler ({biletler.length})</h2>
+            <h2><ClipboardListIcon size={22} /> Mevcut Biletler ({biletler.length})</h2>
             <button onClick={fetchBiletler} className="refresh-btn" disabled={loading}>
-              🔄 Yenile
+              <RefreshIcon size={16} /> Yenile
             </button>
           </div>
 
@@ -513,14 +514,14 @@ const Admin = () => {
                           className="edit-btn"
                           title="Düzenle"
                         >
-                          ✏️
+                          <PencilIcon size={16} />
                         </button>
                         <button
                           onClick={() => handleDeleteBilet(bilet.id)}
                           className="delete-btn"
                           title="Sil"
                         >
-                          🗑️
+                          <TrashIcon size={16} />
                         </button>
                       </td>
                     </tr>

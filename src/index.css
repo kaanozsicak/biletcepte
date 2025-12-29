@@ -95,3 +95,25 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #0d7a0d 0%, #0a5c0a 100%);
 }
+
+/* Icon animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spinner-dash {
+  0% { stroke-dashoffset: 62.8; }
+  50% { stroke-dashoffset: 15.7; }
+  100% { stroke-dashoffset: 62.8; }
+}
+
+/* Icon base styles */
+.icon {
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.icon svg {
+  display: block;
+}

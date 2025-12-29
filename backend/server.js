@@ -1,18 +1,29 @@
-// server.js - BiletCepte Payment Backend
+// server.js - BiletCepte Payment Backend with iyzico Integration
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const Iyzipay = require('iyzipay');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// iyzico Configuration
+const iyzipay = new Iyzipay({
+  apiKey: process.env.IYZIPAY_API_KEY || 'sandbox-afXhZPW0MQlE4dCUUlHcEopsVRGjX5MH',
+  secretKey: process.env.IYZIPAY_SECRET_KEY || 'sandbox-wbwpzKIiplZxI3hh5ALI3BKSoLXrPCvP',
+  uri: process.env.IYZIPAY_URI || 'https://sandbox-api.iyzipay.com'
+});
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Trust proxy for getting real IP
+app.set('trust proxy', true);
 
 // Payment database (in-memory - production'da gerçek database kullanın)
 const payments = new Map();
@@ -83,7 +94,7 @@ app.post('/api/payment/initiate', async (req, res) => {
   }
 });
 
-// Process payment endpoint
+// Process payment endpoint with iyzico integration
 app.post('/api/payment/process', async (req, res) => {
   try {
     const { 
@@ -158,7 +169,8 @@ app.post('/api/payment/process', async (req, res) => {
     // Son kullanma tarihinin geçerli olup olmadığını kontrol et
     const [expMonth, expYear] = expiryDate.split('/');
     const expMonthNum = parseInt(expMonth);
-    const expYearNum = parseInt('20' + expYear);
+    const expYearFull = '20' + expYear; // "25" -> "2025"
+    const expYearNum = parseInt(expYearFull);
     const now = new Date();
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
@@ -177,94 +189,176 @@ app.post('/api/payment/process', async (req, res) => {
       });
     }
 
-    // LUHN ALGORITHM - Kart numarası geçerlilik kontrolü
-    let sum = 0;
-    let isEven = false;
+    // Prepare buyer info
+    const nameParts = (paymentInfo.userName || 'Misafir Kullanıcı').trim().split(' ');
+    const buyerName = nameParts[0] || 'Misafir';
+    const buyerSurname = nameParts.slice(1).join(' ') || '-';
     
-    for (let i = cleanCardNumber.length - 1; i >= 0; i--) {
-      let digit = parseInt(cleanCardNumber[i]);
-      
-      if (isEven) {
-        digit *= 2;
-        if (digit > 9) {
-          digit -= 9;
+    // Format phone number to +90XXXXXXXXXX
+    let formattedPhone = (paymentInfo.userPhone || '').replace(/\D/g, '');
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = formattedPhone.substring(1);
+    }
+    if (!formattedPhone.startsWith('90')) {
+      formattedPhone = '90' + formattedPhone;
+    }
+    formattedPhone = '+' + formattedPhone;
+    if (formattedPhone.length < 13) {
+      formattedPhone = '+905350000000'; // Default sandbox phone
+    }
+
+    // Get client IP
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || '85.34.78.112';
+
+    // Format date for iyzico
+    const formatDate = (date) => {
+      const d = new Date(date);
+      return d.toISOString().replace('T', ' ').substring(0, 19);
+    };
+
+    // Build iyzico payment request
+    const iyzicoRequest = {
+      locale: Iyzipay.LOCALE.TR,
+      conversationId: paymentInfo.orderId,
+      price: paymentInfo.amount.toString(),
+      paidPrice: paymentInfo.amount.toString(),
+      currency: Iyzipay.CURRENCY.TRY,
+      installment: '1',
+      basketId: paymentInfo.orderId,
+      paymentChannel: Iyzipay.PAYMENT_CHANNEL.WEB,
+      paymentGroup: Iyzipay.PAYMENT_GROUP.PRODUCT,
+      paymentCard: {
+        cardHolderName: cardHolder.toUpperCase(),
+        cardNumber: cleanCardNumber,
+        expireMonth: expMonth,
+        expireYear: expYearFull,
+        cvc: cvv,
+        registerCard: '0'
+      },
+      buyer: {
+        id: paymentInfo.paymentId,
+        name: buyerName,
+        surname: buyerSurname,
+        gsmNumber: formattedPhone,
+        email: paymentInfo.email || 'guest@biletcepte.com',
+        // TODO: Production'da gerçek TC Kimlik No alınmalı
+        identityNumber: '74300864791', // Sandbox için geçici değer
+        registrationAddress: 'BiletCepte Online Bilet Satış',
+        ip: clientIp,
+        city: 'Istanbul',
+        country: 'Turkey',
+        zipCode: '34742',
+        lastLoginDate: formatDate(new Date()),
+        registrationDate: formatDate(new Date())
+      },
+      shippingAddress: {
+        contactName: paymentInfo.userName || 'Misafir',
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'BiletCepte Sanal Ürün - Kargo Gerekli Değil',
+        zipCode: '34742'
+      },
+      billingAddress: {
+        contactName: paymentInfo.userName || 'Misafir',
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'BiletCepte Sanal Ürün - Fatura Adresi',
+        zipCode: '34742'
+      },
+      basketItems: [
+        {
+          id: paymentInfo.biletData?.id || `BI-${paymentInfo.orderId}`,
+          name: `${paymentInfo.biletData?.nereden || 'Kalkış'} -> ${paymentInfo.biletData?.nereye || 'Varış'} Bileti`,
+          category1: 'Ticket',
+          category2: paymentInfo.biletData?.firma || 'Otobüs',
+          itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
+          price: paymentInfo.amount.toString()
         }
+      ]
+    };
+
+    // Log request (without sensitive card data)
+    console.log(`💳 iyzico Payment Request - ConversationId: ${iyzicoRequest.conversationId}, Amount: ${iyzicoRequest.price} TRY`);
+
+    // Call iyzico payment API
+    iyzipay.payment.create(iyzicoRequest, (err, result) => {
+      if (err) {
+        console.error('iyzico API Error:', err);
+        paymentInfo.status = 'failed';
+        paymentInfo.failedAt = new Date().toISOString();
+        paymentInfo.errorCode = 'IYZICO_API_ERROR';
+        paymentInfo.errorMessage = err.message;
+        payments.set(paymentId, paymentInfo);
+
+        return res.status(500).json({
+          success: false,
+          error: 'Ödeme işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.',
+          errorCode: 'IYZICO_API_ERROR'
+        });
       }
-      
-      sum += digit;
-      isEven = !isEven;
-    }
-    
-    if (sum % 10 !== 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Geçersiz kart numarası! Lütfen kontrol edin.' 
-      });
-    }
 
-    // TEST KARTLARI - Sadece bunlar başarılı olacak
-    const VALID_TEST_CARDS = [
-      '4242424242424242', // Başarılı test kartı
-      '5555555555554444', // Mastercard başarılı
-      '378282246310005',  // Amex başarılı
-    ];
+      // Log response (without sensitive data)
+      console.log(`📋 iyzico Response - Status: ${result.status}, ConversationId: ${result.conversationId}`);
+      if (result.status !== 'success') {
+        console.log(`⚠️ iyzico Error: ${result.errorCode} - ${result.errorMessage}`);
+      }
 
-    const FAILED_TEST_CARDS = [
-      '4000000000000002', // Başarısız test kartı
-      '4000000000000127', // CVV hatası test
-      '4000000000000069', // Süresi dolmuş test
-    ];
+      if (result.status === 'success') {
+        // Payment successful
+        paymentInfo.status = 'success';
+        paymentInfo.completedAt = new Date().toISOString();
+        paymentInfo.iyzicoPaymentId = result.paymentId;
+        paymentInfo.transactionId = result.itemTransactions?.[0]?.paymentTransactionId || result.paymentId;
+        paymentInfo.cardLast4 = result.lastFourDigits || cleanCardNumber.slice(-4);
+        paymentInfo.cardAssociation = result.cardAssociation;
+        paymentInfo.cardFamily = result.cardFamily;
 
-    // Simulate payment processing (0.5-2 saniye bekle)
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 1500 + 500));
+        payments.set(paymentId, paymentInfo);
 
-    // Kart kontrolü - Test kartları
-    let isSuccess;
-    
-    if (VALID_TEST_CARDS.includes(cleanCardNumber)) {
-      // Başarılı test kartı
-      isSuccess = true;
-    } else if (FAILED_TEST_CARDS.includes(cleanCardNumber)) {
-      // Başarısız test kartı
-      isSuccess = false;
-    } else {
-      // Diğer kartlar için %90 başarı oranı
-      const successRate = parseFloat(process.env.PAYMENT_SUCCESS_RATE) || 0.9;
-      isSuccess = Math.random() < successRate;
-    }
+        return res.json({
+          success: true,
+          paymentId,
+          transactionId: paymentInfo.transactionId,
+          orderId: paymentInfo.orderId,
+          amount: paymentInfo.amount,
+          cardLast4: paymentInfo.cardLast4,
+          message: 'Ödeme başarıyla tamamlandı!'
+        });
+      } else {
+        // Payment failed
+        paymentInfo.status = 'failed';
+        paymentInfo.failedAt = new Date().toISOString();
+        paymentInfo.errorCode = result.errorCode;
+        paymentInfo.errorMessage = result.errorMessage;
 
-    if (isSuccess) {
-      // Payment successful
-      paymentInfo.status = 'success';
-      paymentInfo.completedAt = new Date().toISOString();
-      paymentInfo.transactionId = `TXN-${Date.now()}`;
-      paymentInfo.cardLast4 = cardNumber.slice(-4);
+        payments.set(paymentId, paymentInfo);
 
-      payments.set(paymentId, paymentInfo);
+        // User-friendly error messages
+        let userMessage = 'Ödeme başarısız! Lütfen kart bilgilerinizi kontrol edin.';
+        
+        // Map common iyzico error codes to user-friendly messages
+        const errorMessages = {
+          '10051': 'Kartınızda yeterli bakiye bulunmamaktadır.',
+          '10005': 'İşlem onaylanmadı. Lütfen bankanızla iletişime geçin.',
+          '10012': 'Geçersiz kart numarası.',
+          '10054': 'Kartın süresi dolmuş.',
+          '10057': 'Kart sahibi bu işlemi yapamaz.',
+          '10058': 'Bu işlem terminalinize kapalıdır.',
+          '10034': 'Sahte kart girişimi.',
+          '12': 'Geçersiz işlem.',
+        };
 
-      res.json({
-        success: true,
-        paymentId,
-        transactionId: paymentInfo.transactionId,
-        orderId: paymentInfo.orderId,
-        amount: paymentInfo.amount,
-        cardLast4: paymentInfo.cardLast4,
-        message: 'Ödeme başarıyla tamamlandı!'
-      });
-    } else {
-      // Payment failed
-      paymentInfo.status = 'failed';
-      paymentInfo.failedAt = new Date().toISOString();
-      paymentInfo.errorCode = 'INSUFFICIENT_FUNDS'; // Simulated error
+        if (result.errorCode && errorMessages[result.errorCode]) {
+          userMessage = errorMessages[result.errorCode];
+        }
 
-      payments.set(paymentId, paymentInfo);
-
-      res.status(400).json({
-        success: false,
-        error: 'Ödeme başarısız! Lütfen kart bilgilerinizi kontrol edin veya farklı bir kart deneyin.',
-        errorCode: 'INSUFFICIENT_FUNDS'
-      });
-    }
+        return res.status(400).json({
+          success: false,
+          error: userMessage,
+          errorCode: result.errorCode
+        });
+      }
+    });
 
   } catch (error) {
     console.error('Payment processing error:', error);
@@ -330,6 +424,9 @@ setInterval(() => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 BiletCepte Payment Server running on http://localhost:${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`💳 Payment success rate: ${(parseFloat(process.env.PAYMENT_SUCCESS_RATE) * 100).toFixed(0)}%`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`💳 Payment Gateway: iyzico ${process.env.IYZIPAY_URI?.includes('sandbox') ? 'SANDBOX' : 'PRODUCTION'}`);
+  console.log(`🔗 iyzico URI: ${process.env.IYZIPAY_URI || 'https://sandbox-api.iyzipay.com'}`);
+  // TODO: 3DS veya CheckoutForm için ileriki aşamada callbackUrl HTTPS gerekir
+  // Local'de HTTPS için ngrok veya cloudflare tunnel kullanılabilir
 });

@@ -6,6 +6,7 @@ import Header from './header';
 import { getDatabase, ref, get, remove } from 'firebase/database';
 import { useToast } from './useToast';
 import Toast from './Toast';
+import { BusIcon, ClockIcon, TrashIcon, CreditCardIcon, TicketIcon } from './Icons';
 
 const Biletler = () => {
   const [biletler, setBiletler] = useState([]);
@@ -283,25 +284,25 @@ const Biletler = () => {
                 <div className="bilet-detaylar-grid">
                   {bilet.firma && (
                     <div className="detay-item">
-                      <span className="detay-label">🚌 Firma</span>
+                      <span className="detay-label"><BusIcon size={16} /> Firma</span>
                       <span className="detay-value">{bilet.firma}</span>
                     </div>
                   )}
                   {bilet.saat && (
                     <div className="detay-item">
-                      <span className="detay-label">⏰ Kalkış Saati</span>
+                      <span className="detay-label"><ClockIcon size={16} /> Kalkış Saati</span>
                       <span className="detay-value">{bilet.saat}</span>
                     </div>
                   )}
                   {bilet.fiyat && (
                     <div className="detay-item">
-                      <span className="detay-label">💰 Fiyat</span>
+                      <span className="detay-label"><CreditCardIcon size={16} /> Fiyat</span>
                       <span className="detay-value">{bilet.fiyat} TL</span>
                     </div>
                   )}
                   {bilet.koltukSayisi && (
                     <div className="detay-item">
-                      <span className="detay-label">🪑 Koltuk Sayısı</span>
+                      <span className="detay-label"><TicketIcon size={16} /> Koltuk Sayısı</span>
                       <span className="detay-value">{bilet.koltukSayisi}</span>
                     </div>
                   )}
@@ -310,7 +311,7 @@ const Biletler = () => {
               
               <div className="bilet-footer">
                 <button className="iptal-btn" onClick={() => handleIptal(bilet)}>
-                  🗑️ Bileti İptal Et
+                  <TrashIcon size={16} /> Bileti İptal Et
                 </button>
                 <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
                   Bilet ID: {bilet.id}
